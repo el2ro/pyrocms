@@ -23,12 +23,12 @@ class Blog_m extends MY_Model {
 					->get('blog')
 					->row();
 	}
-	
+
 	public function get_by($key, $value = '')
 	{
 		$this->db->select('blog.*, profiles.display_name')
 			->join('profiles', 'profiles.user_id = blog.author_id', 'left');
-			
+
 		if (is_array($key))
 		{
 			$this->db->where($key);
@@ -94,7 +94,7 @@ class Blog_m extends MY_Model {
 
 		return $this->get_all();
 	}
-	
+
 	public function count_tagged_by($tag, $params)
 	{
 		return $this->select('*')
@@ -105,7 +105,7 @@ class Blog_m extends MY_Model {
 			->where($params)
 			->count_all_results();
 	}
-	
+
 	public function get_tagged_by($tag, $params)
 	{
 		return $this->db->select('blog.*, blog.title title, blog.slug slug, blog_categories.title category_title, blog_categories.slug category_slug')

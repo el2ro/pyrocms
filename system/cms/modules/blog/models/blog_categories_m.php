@@ -18,12 +18,13 @@ class Blog_categories_m extends MY_Model
 	public function insert($input = array())
 	{
 		$this->load->helper('text');
-		parent::insert(array(
+		$id = parent::insert(array(
 			'title'=>$input['title'],
 			'slug'=>url_title(strtolower(convert_accented_characters($input['title'])))
 		));
-		
-		return $input['title'];
+
+		//return $input['title'];
+		return $id;
 	}
 
 	/**
@@ -37,7 +38,7 @@ class Blog_categories_m extends MY_Model
 	{
 		return parent::update($id, array(
 			'title'	=> $input['title'],
-		        'slug'	=> url_title(strtolower(convert_accented_characters($input['title'])))
+			'slug'	=> url_title(strtolower(convert_accented_characters($input['title'])))
 		));
 	}
 
@@ -51,7 +52,7 @@ class Blog_categories_m extends MY_Model
 	{
 		return parent::count_by('slug', url_title($title)) > 0;
 	}
-	
+
 	/**
 	 * Insert a new category into the database via ajax
 	 * @access public

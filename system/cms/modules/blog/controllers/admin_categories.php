@@ -14,7 +14,7 @@ class Admin_Categories extends Admin_Controller {
 	 * @var int
 	 */
 	protected $section = 'categories';
-	
+
 	/**
 	 * Array that contains the validation rules
 	 * @access protected
@@ -27,7 +27,7 @@ class Admin_Categories extends Admin_Controller {
 			'rules' => 'trim|required|max_length[20]|callback__check_title'
 		),
 	);
-	
+
 	/**
 	 * The constructor
 	 * @access public
@@ -36,16 +36,21 @@ class Admin_Categories extends Admin_Controller {
 	public function __construct()
 	{
 		parent::__construct();
-		
+
+		$this->load->model('blog_m');
 		$this->load->model('blog_categories_m');
 		$this->lang->load('categories');
 		$this->lang->load('blog');
-		
+
+		//Dynamic router
+		$this->load->helper('blog');
+		$this->load->library('droutes');
+
 		// Load the validation library along with the rules
 		$this->load->library('form_validation');
 		$this->form_validation->set_rules($this->validation_rules);
 	}
-	
+
 	/**
 	 * Index method, lists all categories
 	 * @access public
@@ -54,11 +59,11 @@ class Admin_Categories extends Admin_Controller {
 	public function index()
 	{
 		$this->pyrocache->delete_all('modules_m');
-		
+
 		// Create pagination links
 		$total_rows = $this->blog_categories_m->count_all();
 		$pagination = create_pagination('admin/blog/categories/index', $total_rows, NULL, 5);
-			
+
 		// Using this data, get the relevant results
 		$categories = $this->blog_categories_m->order_by('title')->limit($pagination['limit'])->get_all();
 
@@ -68,7 +73,7 @@ class Admin_Categories extends Admin_Controller {
 			->set('pagination', $pagination)
 			->build('admin/categories/index', $this->data);
 	}
-	
+
 	/**
 	 * Create method, creates a new category
 	 * @access public
@@ -79,25 +84,38 @@ class Admin_Categories extends Admin_Controller {
 		// Validate the data
 		if ($this->form_validation->run())
 		{
-			$this->blog_categories_m->insert($_POST)
-				? $this->session->set_flashdata('success', sprintf( lang('cat_add_success'), $this->input->post('title')) )
-				: $this->session->set_flashdata('error', lang('cat_add_error'));
+			$id = $this->blog_categories_m->insert($_POST);
+			if($id)
+			{
+				$this->session->set_flashdata('success', sprintf( lang('cat_add_success'), $this->input->post('title')) );
+				$new_category = $this->blog_categories_m->get($id);
+				$this->droutes->add(
+					array('name'=>'blog_category',
+						'group_id'=>$id,
+						'route_key'=>get_category_url($new_category->slug),
+						'route_value'=>'blog/category/id/'.$id
+						));
+			}
+			else
+			{
+				$this->session->set_flashdata('error', lang('cat_add_error'));
+			}
 
 			redirect('admin/blog/categories');
 		}
-		
+
 		// Loop through each validation rule
 		foreach ($this->validation_rules as $rule)
 		{
 			$category->{$rule['field']} = set_value($rule['field']);
 		}
-		
+
 		$this->template
 			->title($this->module_details['name'], lang('cat_create_title'))
 			->set('category', $category)
-			->build('admin/categories/form');	
+			->build('admin/categories/form');
 	}
-	
+
 	/**
 	 * Edit method, edits an existing category
 	 * @access public
@@ -105,23 +123,49 @@ class Admin_Categories extends Admin_Controller {
 	 * @return void
 	 */
 	public function edit($id = 0)
-	{	
+	{
 		// Get the category
 		$category = $this->blog_categories_m->get($id);
-		
+
 		// ID specified?
 		$category or redirect('admin/blog/categories/index');
-		
+
 		// Validate the results
 		if ($this->form_validation->run())
-		{		
-			$this->blog_categories_m->update($id, $_POST)
-				? $this->session->set_flashdata('success', sprintf( lang('cat_edit_success'), $this->input->post('title')) )
-				: $this->session->set_flashdata('error', lang('cat_edit_error'));
-			
+		{
+			if ($this->blog_categories_m->update($id, $_POST))
+			{
+				$this->session->set_flashdata('success', sprintf( lang('cat_edit_success'), $this->input->post('title')) );
+				if($category->title != $this->input->post('title'))
+				{
+					$new_category = $this->blog_categories_m->get($id);
+					$this->droutes->change(
+						array('name'=>'blog_category',
+							  'group_id'=>$id,
+							  'route_key'=>get_category_url($new_category->slug),
+							  'route_value'=>'blog/category/id/'.$id
+							  ));
+					//Update routes and redirects to blog posts too
+					$blogs = $this->blog_m->get_many_by(array('category_id'=>$id));
+					foreach($blogs as $blog)
+					{
+						$this->droutes->change(
+							array('name'=>'blog',
+								  'group_id'=>$blog->id,
+								  'route_key'=>get_post_url($blog->id, $blog->slug, $blog->created_on, $blog->category_id),
+								  'route_value'=>'blog/view/id/'.$blog->id
+								  ));
+					}
+				}
+			}
+			else
+			{
+				$this->session->set_flashdata('error', lang('cat_edit_error'));
+			}
+
 			redirect('admin/blog/categories/index');
 		}
-		
+
 		// Loop through each rule
 		foreach ($this->validation_rules as $rule)
 		{
@@ -135,7 +179,7 @@ class Admin_Categories extends Admin_Controller {
 			->title($this->module_details['name'], sprintf(lang('cat_edit_title'), $category->title))
 			->set('category', $category)
 			->build('admin/categories/form');
-	}	
+	}
 
 	/**
 	 * Delete method, deletes an existing category (obvious isn't it?)
@@ -144,9 +188,9 @@ class Admin_Categories extends Admin_Controller {
 	 * @return void
 	 */
 	public function delete($id = 0)
-	{	
+	{
 		$id_array = (!empty($id)) ? array($id) : $this->input->post('action_to');
-		
+
 		// Delete multiple
 		if (!empty($id_array))
 		{
@@ -157,6 +201,11 @@ class Admin_Categories extends Admin_Controller {
 				if ($this->blog_categories_m->delete($id))
 				{
 					$deleted++;
+
+					$this->droutes->delete(
+					array('name'=>'blog_category',
+						  'group_id'=>$id
+						  ));
 				}
 				else
 				{
@@ -164,20 +213,20 @@ class Admin_Categories extends Admin_Controller {
 				}
 				$to_delete++;
 			}
-			
+
 			if ( $deleted > 0 )
 			{
 				$this->session->set_flashdata('success', sprintf(lang('cat_mass_delete_success'), $deleted, $to_delete));
 			}
-		}		
+		}
 		else
 		{
 			$this->session->set_flashdata('error', lang('cat_no_select_error'));
 		}
-		
+
 		redirect('admin/blog/categories/index');
 	}
-		
+
 	/**
 	 * Callback method that checks the title of the category
 	 * @access public
@@ -194,7 +243,7 @@ class Admin_Categories extends Admin_Controller {
 
 		return TRUE;
 	}
-	
+
 	/**
 	 * Create method, creates a new category via ajax
 	 * @access public
@@ -207,14 +256,14 @@ class Admin_Categories extends Admin_Controller {
 		{
 			$category->{$rule['field']} = set_value($rule['field']);
 		}
-		
+
 		$this->data->method = 'create';
 		$this->data->category =& $category;
-		
+
 		if ($this->form_validation->run())
 		{
 			$id = $this->blog_categories_m->insert_ajax($_POST);
-			
+
 			if ($id > 0)
 			{
 				$message = sprintf( lang('cat_add_success'), $this->input->post('title'));
@@ -230,7 +279,7 @@ class Admin_Categories extends Admin_Controller {
 				'category_id'	=> $id,
 				'status'		=> 'ok'
 			));
-		}	
+		}
 		else
 		{
 			// Render the view

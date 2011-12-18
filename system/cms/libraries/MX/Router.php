@@ -38,46 +38,52 @@ require dirname(__FILE__).'/Modules.php';
 class MX_Router extends CI_Router
 {
 	private $module;
-	
+
 	public function fetch_module() {
 		return $this->module;
 	}
-	
+
 	public function _validate_request($segments) {
 
 		if (count($segments) == 0) return $segments;
-		
+
+		require_once BASEPATH.'database/DB'.EXT;
+		$this->load_site_ref();
+
 		/* locate module controller */
 		if ($located = $this->locate($segments)) return $located;
-		
+
+		/* Dynamic route */
+		if ($dyn_segments = $this->dynamic_route($segments))
+		{
+			if ($located = $this->locate($dyn_segments)) return $located;
+		}
+
 		/* use a default 404_override controller */
 		if (isset($this->routes['404_override']) AND $this->routes['404_override']) {
 			$segments = explode('/', $this->routes['404_override']);
 			if ($located = $this->locate($segments)) return $located;
 		}
-		
+
 		/* no controller found */
 		show_404();
 	}
-	
-	/** Locate the controller **/
-	public function locate($segments) {		
-		
+
+	public function load_site_ref(){
 		/**
 		 * Load the site ref for multi-site support
 		 */
 		if ( ! defined('SITE_REF'))
 		{
-			require_once BASEPATH.'database/DB'.EXT;
-			
+
 			if (DB()->table_exists('core_sites'))
 			{
 				$site = DB()->where('domain', SITE_DOMAIN)
 					->get('core_sites')
 					->row();
-					
+
 				$locations = array();
-				
+
 				// Check to see if the site retrieval was successful. If not then
 				// we will let MY_Controller handle the errors.
 				if (isset($site->ref))
@@ -86,52 +92,72 @@ class MX_Router extends CI_Router
 					{
 						$locations[str_replace('__SITE_REF__', $site->ref, $location)] = str_replace('__SITE_REF__', $site->ref, $offset);
 					}
-					
+
 					// Set the session config to the correct table using the config name (but removing 'default_')
 					$this->config->set_item('sess_table_name', $site->ref.'_'.str_replace('default_', '', config_item('sess_table_name')));
 
 					// The site ref. Used for building site specific paths
 					define('SITE_REF', $site->ref);
-					
+
 					// Path to uploaded files for this site
 					define('UPLOAD_PATH', 'uploads/'.SITE_REF.'/');
-					
+
 					// Path to the addon folder for this site
 					define('ADDONPATH', ADDON_FOLDER.SITE_REF.'/');
-					
+
 					Modules::$locations = $locations;
-					
+
 				}
 			}
 		}
-		
+	}
+
+	/* Check if dynamic routing has been used */
+	public function dynamic_route($segments) {
+		//TODO Caching Here
+		if (DB()->table_exists(SITE_REF.'_droutes'))
+		{
+			$route = DB()->where('route_key', implode('/',$segments))
+				->get(SITE_REF.'_droutes')
+				->row();
+
+			if (isset($route->id))
+			{
+				return explode('/',$route->route_value);
+			}
+		}
+	}
+
+	/** Locate the controller **/
+	public function locate($segments) {
+
 		$this->module = '';
 		$this->directory = '';
 		$ext = $this->config->item('controller_suffix').EXT;
-		
+
 		/* use module route if available */
-		if (isset($segments[0]) AND $routes = Modules::parse_routes($segments[0], implode('/', $segments))) 	
+		if (isset($segments[0]) AND $routes = Modules::parse_routes($segments[0], implode('/', $segments)))
 		{
 			$segments = $routes;
 		}
-	
+
 		/* get the segments array elements */
 		list($module, $directory, $controller) = array_pad($segments, 3, NULL);
 
 		/* check modules */
 		foreach (Modules::$locations as $location => $offset) {
-		
+
 			/* module exists? */
 			if (is_dir($source = $location.$module.'/controllers/')) {
-				
+
 				$this->module = $module;
 				$this->directory = $offset.$module.'/controllers/';
-				
+
 				/* module sub-controller exists? */
 				if($directory AND is_file($source.$directory.$ext)) {
 					return array_slice($segments, 1);
 				}
-					
+
 				/* module sub-directory exists? */
 				if($directory AND is_dir($source.$directory.'/')) {
 
@@ -142,36 +168,37 @@ class MX_Router extends CI_Router
 					if(is_file($source.$directory.$ext)) {
 						return array_slice($segments, 1);
 					}
-				
+
 					/* module sub-directory sub-controller exists? */
 					if($controller AND is_file($source.$controller.$ext))	{
 						return array_slice($segments, 2);
 					}
 				}
-				
-				/* module controller exists? */			
+
+				/* module controller exists? */
 				if(is_file($source.$module.$ext)) {
 					return $segments;
 				}
 			}
 		}
-		
-		/* application controller exists? */			
+
+		/* application controller exists? */
 		if (is_file(APPPATH.'controllers/'.$module.$ext)) {
 			return $segments;
 		}
-		
+
 		/* application sub-directory controller exists? */
 		if($directory AND is_file(APPPATH.'controllers/'.$module.'/'.$directory.$ext)) {
 			$this->directory = $module.'/';
 			return array_slice($segments, 1);
 		}
-		
+
 		/* application sub-directory default controller exists? */
 		if (is_file(APPPATH.'controllers/'.$module.'/'.$this->default_controller.$ext)) {
 			$this->directory = $module.'/';
 			return array($this->default_controller);
 		}
+
 	}
 
 	public function set_class($class) {

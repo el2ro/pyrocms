@@ -130,6 +130,7 @@ class Admin extends Admin_Controller {
 	{
 		$settings = $this->settings_m->get_many_by(array('is_gui'=>1));
 		$settings_stored = array();
+		$changed_slugs = array();
 
 		// Create dynamic validation rules
 		foreach ($settings as $setting)
@@ -163,11 +164,14 @@ class Admin extends Admin_Controller {
 				if ($input_value !== $stored_value)
 				{
 					$this->settings->set_item($slug, $input_value);
+					$changed_slugs[] = $slug;
 				}
 			}
 
 			// Success...
 			$this->session->set_flashdata('success', $this->lang->line('settings_save_success'));
+			// Send event info about settings change
+			Events::trigger('settings_changed',$changed_slugs);
 		}
 		elseif (validation_errors())
 		{

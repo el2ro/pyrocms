@@ -8,7 +8,7 @@
 		<p class="post_date"><span class="post_date_label"><?php echo lang('blog_posted_label');?>: </span><?php echo format_date($post->created_on); ?></p>
 		<?php if($post->category->slug): ?>
 		<p class="post_category">
-			<?php echo lang('blog_category_label');?>: <?php echo anchor('blog/category/'.$post->category->slug, $post->category->title);?>
+			<?php echo lang('blog_category_label');?>: <?php echo anchor(get_category_url($post->category->slug), $post->category->title);?>
 		</p>
 		<?php endif; ?>
 	</div>

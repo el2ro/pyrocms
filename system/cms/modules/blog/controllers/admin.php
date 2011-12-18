@@ -92,10 +92,14 @@ class Admin extends Admin_Controller
 
 		// Fire an event, we're posting a new blog!
 		Events::trigger('blog_article_published');
-		
+
 		$this->load->model(array('blog_m', 'blog_categories_m'));
 		$this->lang->load(array('blog', 'categories'));
-		
+
+		//Dynamic router support
+		$this->load->helper('blog');
+		$this->load->library('droutes');
+
 		$this->load->library(array('keywords/keywords', 'form_validation'));
 
 		// Date ranges for select boxes
@@ -195,12 +199,18 @@ class Admin extends Admin_Controller
 			{
 				$this->pyrocache->delete_all('blog_m');
 				$this->session->set_flashdata('success', sprintf($this->lang->line('blog_post_add_success'), $this->input->post('title')));
-				
+
 				// They are trying to put this live
 				if ($this->input->post('status') == 'live')
 				{
 					// Fire an event, we're posting a new blog!
 					Events::trigger('blog_article_published');
+					$this->droutes->add(
+						array('name'=>'blog',
+							  'group_id'=>$id,
+							  'route_key'=>get_post_url($id, $this->input->post('slug'), $created_on, $this->input->post('category_id')),
+							  'route_value'=>'blog/view/id/'.$id
+							  ));
 				}
 			}
 			else
@@ -257,7 +267,7 @@ class Admin extends Admin_Controller
 		{
 			$created_on = $post->created_on;
 		}
-		
+
 		$this->form_validation->set_rules(array_merge($this->validation_rules, array(
 			'title' => array(
 				'field' => 'title',
@@ -270,7 +280,7 @@ class Admin extends Admin_Controller
 				'rules' => 'trim|required|alpha_dot_dash|max_length[100]|callback__check_slug['.$id.']'
 			),
 		)));
-		
+
 		if ($this->form_validation->run())
 		{
 			// They are trying to put this live
@@ -295,7 +305,7 @@ class Admin extends Admin_Controller
 				'type'				=> $this->input->post('type'),
 				'parsed'			=> ($this->input->post('type') == 'markdown') ? parse_markdown($this->input->post('body')) : ''
 			));
-			
+
 			if ($result)
 			{
 				$this->session->set_flashdata(array('success' => sprintf(lang('blog_edit_success'), $this->input->post('title'))));
@@ -305,9 +315,32 @@ class Admin extends Admin_Controller
 				{
 					// Fire an event, we're posting a new blog!
 					Events::trigger('blog_article_published');
+					$this->droutes->add(
+						array('name'=>'blog',
+							  'group_id'=>$id,
+							  'route_key'=>get_post_url($id, $this->input->post('slug'), $created_on, $this->input->post('category_id')),
+							  'route_value'=>'blog/view/id/'.$id
+							  ));
+				}
+				else if($post->status == 'live' and $this->input->post('status') != 'live' )
+				{
+					//Removed from the live handle routes
+					$this->droutes->delete(
+						array('name'=>'blog',
+							  'group_id'=>$id
+							  ));
+				}
+				else if($post->slug != $this->input->post('slug') || $post->category_id != $this->input->post('category_id'))
+				{
+					$this->droutes->change(
+						array('name'=>'blog',
+							  'group_id'=>$id,
+							  'route_key'=>get_post_url($id, $this->input->post('slug'), $created_on, $this->input->post('category_id')),
+							  'route_value'=>'blog/view/id/'.$id
+							  ));
 				}
 			}
-			
+
 			else
 			{
 				$this->session->set_flashdata('error', $this->lang->line('blog_edit_error'));
@@ -327,7 +360,7 @@ class Admin extends Admin_Controller
 		}
 
 		$post->created_on = $created_on;
-		
+
 		$this->template
 			->title($this->module_details['name'], sprintf(lang('blog_edit_title'), $post->title))
 			->append_metadata($this->load->view('fragments/wysiwyg', $this->data, TRUE))
@@ -367,12 +400,12 @@ class Admin extends Admin_Controller
 				role_or_die('blog', 'put_live');
 				$this->publish();
 				break;
-			
+
 			case 'delete':
 				role_or_die('blog', 'delete_live');
 				$this->delete();
 				break;
-			
+
 			default:
 				redirect('admin/blog');
 				break;
@@ -406,6 +439,12 @@ class Admin extends Admin_Controller
 					// Wipe cache for this model, the content has changed
 					$this->pyrocache->delete('blog_m');
 					$post_titles[] = $post->title;
+					$this->droutes->add(
+						array('name'=>'blog',
+							  'group_id'=>$id,
+							  'route_key'=>get_post_url($id, $post->slug, $post->created_on, $post->category_id),
+							  'route_value'=>'blog/view/id/'.$id
+							  ));
 				}
 			}
 		}
@@ -458,6 +497,10 @@ class Admin extends Admin_Controller
 					// Wipe cache for this model, the content has changed
 					$this->pyrocache->delete('blog_m');
 					$post_titles[] = $post->title;
+					$this->droutes->delete(
+						array('name'=>'blog',
+							  'group_id'=>$id
+							  ));
 				}
 			}
 		}
@@ -494,9 +537,9 @@ class Admin extends Admin_Controller
 	public function _check_title($title, $id = null)
 	{
 		$this->form_validation->set_message('_check_title', sprintf(lang('blog_already_exist_error'), lang('blog_title_label')));
-		return $this->blog_m->check_exists('title', $title, $id);			
+		return $this->blog_m->check_exists('title', $title, $id);
 	}
-	
+
 	/**
 	 * Callback method that checks the slug of an post
 	 * @access public

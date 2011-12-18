@@ -8,7 +8,7 @@ class Public_Controller extends MY_Controller
 		parent::__construct();
 
 		$this->benchmark->mark('public_controller_start');
-		
+
 		//check for a redirect
 		$this->load->model('redirects/redirect_m');
 		$uri = trim(uri_string(), '/');
@@ -23,7 +23,7 @@ class Public_Controller extends MY_Controller
 		if ( ! $this->settings->frontend_enabled && (empty($this->current_user) OR $this->current_user->group != 'admin'))
 		{
 			header('Retry-After: 600');
-			
+
 			$error = $this->settings->unavailable_message ? $this->settings->unavailable_message : lang('cms_fatal_error');
 			show_error($error, 503);
 		}
@@ -41,7 +41,7 @@ class Public_Controller extends MY_Controller
 
 		// Prepare Asset library
 	    $this->asset->set_theme($this->theme->slug);
-	
+
 		// Set the front-end theme directory
 		$this->config->set_item('theme_asset_dir', dirname($this->theme->path).'/');
 		$this->config->set_item('theme_asset_url', BASE_URL.dirname($this->theme->web_path).'/');
@@ -78,7 +78,7 @@ class Public_Controller extends MY_Controller
 
 	    // Frontend data
 	    $this->load->library('variables/variables');
-		
+
 		// grab the theme options if there are any
 		$this->theme->options = $this->pyrocache->model('theme_m', 'get_values_by', array(array('theme' => $this->theme->slug) ));
 

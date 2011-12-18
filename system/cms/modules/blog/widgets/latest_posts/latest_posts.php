@@ -49,6 +49,7 @@ class Widget_Latest_posts extends Widgets
 	{
 		// load the blog module's model
 		class_exists('Blog_m') OR $this->load->model('blog/blog_m');
+		$this->load->helper('blog/blog');
 
 		// sets default number of posts to be shown
 		empty($options['limit']) AND $options['limit'] = 5;

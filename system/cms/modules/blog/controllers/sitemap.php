@@ -23,10 +23,10 @@ class Sitemap extends Public_Controller
 
 		// send em to XML!
 		foreach ($articles as $article)
-		{			
+		{
 			$node = $doc->addChild('url');
 
-			$loc = site_url('blog/'.date('Y/m/', $article->created_on).$article->slug);
+			$loc = site_url(get_post_url($article->id, $article->slug, $article->created_on, $article->category_id));
 
 			$node->addChild('loc', $loc);
 
@@ -38,7 +38,7 @@ class Sitemap extends Public_Controller
 
 		$this->output
 			->set_content_type('application/xml')
-			->set_output($doc->asXML());			
-	
+			->set_output($doc->asXML());
+
 	}
 }

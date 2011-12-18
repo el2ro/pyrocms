@@ -2,7 +2,7 @@
 <ul>
 	<?php foreach($categories as $category): ?>
 	<li>
-		<?php echo anchor("blog/category/{$category->slug}", $category->title); ?>
+		<?php echo anchor(get_category_url($category->slug), $category->title); ?>
 	</li>
 <?php endforeach; ?>
 </ul>

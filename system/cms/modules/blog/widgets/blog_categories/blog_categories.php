@@ -23,13 +23,14 @@ class Widget_Blog_categories extends Widgets
 	public $author		= 'Stephen Cozart';
 	public $website		= 'http://github.com/clip/';
 	public $version		= '1.0';
-	
+
 	public function run()
 	{
 		$this->load->model('blog/blog_categories_m');
-		
+		$this->load->helper('blog/blog');
+
 		$categories = $this->blog_categories_m->order_by('title')->get_all();
-		
+
 		return array('categories' => $categories);
-	}	
+	}
 }

@@ -10,6 +10,7 @@ class Blog extends Public_Controller
 		$this->load->model('comments/comments_m');
 		$this->load->library(array('keywords/keywords'));
 		$this->lang->load('blog');
+		$this->load->helper('blog');
 	}
 
 	// blog/page/x also routes here
@@ -20,7 +21,7 @@ class Blog extends Public_Controller
 
 		// Set meta description based on post titles
 		$meta = $this->_posts_metadata($this->data->blog);
-		
+
 		foreach ($this->data->blog AS &$post)
 		{
 			$post->keywords = Keywords::get_links($post->keywords, 'blog/tagged');
@@ -34,15 +35,22 @@ class Blog extends Public_Controller
 			->build('index', $this->data);
 	}
 
-	public function category($slug = '')
+	public function category($slug = '',$id = null)
 	{
 		$slug OR redirect('blog');
 
 		// Get category data
-		$category = $this->blog_categories_m->get_by('slug', $slug) OR show_404();
+		if ($slug != 'id' or ! $category = $this->blog_categories_m->get((int)$id))
+		{
+			$category = $this->blog_categories_m->get_by('slug', $slug) OR show_404();
+		}
+		else
+		{
+			$slug = $category->slug;
+		}
 
 		// Count total blog posts and work out how many pages exist
-		$pagination = create_pagination('blog/category/'.$slug, $this->blog_m->count_by(array(
+		$pagination = create_pagination(get_category_url($slug), $this->blog_m->count_by(array(
 			'category'=> $slug,
 			'status' => 'live'
 		)), NULL, 4);
@@ -55,7 +63,7 @@ class Blog extends Public_Controller
 
 		// Set meta description based on post titles
 		$meta = $this->_posts_metadata($blog);
-		
+
 		foreach ($blog AS &$post)
 		{
 			$post->keywords = Keywords::get_links($post->keywords, 'blog/tagged');
@@ -83,7 +91,7 @@ class Blog extends Public_Controller
 
 		// Set meta description based on post titles
 		$meta = $this->_posts_metadata($this->data->blog);
-		
+
 		foreach ($this->data->blog AS &$post)
 		{
 			$post->keywords = Keywords::get_links($post->keywords, 'blog/tagged');
@@ -98,18 +106,21 @@ class Blog extends Public_Controller
 	}
 
 	// Public: View a post
-	public function view($slug = '')
+	public function view($slug = '', $id = null)
 	{
-		if ( ! $slug or ! $post = $this->blog_m->get_by('slug', $slug))
+		if ( $slug != 'id' or ! $post = $this->blog_m->get($id))
 		{
-			redirect('blog');
+			if ( ! $slug or ! $post = $this->blog_m->get_by('slug', $slug))
+			{
+				redirect('blog');
+			}
 		}
 
 		if ($post->status != 'live' && ! $this->ion_auth->is_admin())
 		{
 			redirect('blog');
 		}
-		
+
 		// if it uses markdown then display the parsed version
 		if ($post->type == 'markdown')
 		{
@@ -139,9 +150,9 @@ class Blog extends Public_Controller
 
 		if ($post->category->id > 0)
 		{
-			$this->template->set_breadcrumb($post->category->title, 'blog/category/'.$post->category->slug);
+			$this->template->set_breadcrumb($post->category->title, get_category_url($post->category->slug));
 		}
-		
+
 		$post->keywords = Keywords::get_links($post->keywords, 'blog/tagged');
 
 		$this->template
@@ -149,7 +160,7 @@ class Blog extends Public_Controller
 			->set('post', $post)
 			->build('view', $this->data);
 	}
-	
+
 	public function tagged($tag = '')
 	{
 		$tag OR redirect('blog');
@@ -163,7 +174,7 @@ class Blog extends Public_Controller
 		$blog = $this->blog_m->limit($pagination['limit'])->get_tagged_by($tag, array(
 			'status' => 'live'
 		));
-		
+
 		foreach ($blog AS &$post)
 		{
 			$post->keywords = Keywords::get_links($post->keywords, 'blog/tagged');
@@ -171,7 +182,7 @@ class Blog extends Public_Controller
 
 		// Set meta description based on post titles
 		$meta = $this->_posts_metadata($blog);
-		
+
 		$name = str_replace('-', ' ', $tag);
 
 		// Build the page
