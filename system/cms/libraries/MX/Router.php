@@ -117,6 +117,7 @@ class MX_Router extends CI_Router
 		//TODO Caching Here
 		if (DB()->table_exists(SITE_REF.'_droutes'))
 		{
+/*
 			$route = DB()->where('route_key', implode('/',$segments))
 				->get(SITE_REF.'_droutes')
 				->row();
@@ -124,6 +125,27 @@ class MX_Router extends CI_Router
 			if (isset($route->id))
 			{
 				return explode('/',$route->route_value);
+			}
+*/
+			$routes = DB()->select('route_key, route_value')->get(SITE_REF.'_droutes')->result();
+			$uri = implode('/', $segments);
+			foreach ($routes as $route)
+			{
+				if ($uri == $route->route_key) return explode('/', $route->route_value);
+
+				$key = str_replace(':any', '.+', str_replace(':num', '[0-9]+', $route->route_key));
+
+				// Does the RegEx match?
+				if (preg_match('#^'.$key.'$#', $uri))
+				{
+					// Do we have a back-reference?
+					if (strpos($route->route_value, '$') !== FALSE AND strpos($key, '(') !== FALSE)
+					{
+						$val = preg_replace('#^'.$key.'$#', $route->route_value, $uri);
+					}
+
+					return explode('/', $val);
+				}
 			}
 		}
 	}
