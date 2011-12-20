@@ -18,7 +18,7 @@ class Migration_Route_settings extends CI_Migration {
 		));
 
 		$sql = "
-			CREATE TABLE IF NOT EXISTS `{$this->db_pre}droutes` (
+			CREATE TABLE IF NOT EXISTS " . $this->db->dbprefix('droutes') . " (
 			 `id` int(11) NOT NULL AUTO_INCREMENT,
 			 `name` varchar(100) NOT NULL,
 			 `group_id` int(11) DEFAULT NULL,
