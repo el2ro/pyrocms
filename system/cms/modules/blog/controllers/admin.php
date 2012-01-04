@@ -90,16 +90,14 @@ class Admin extends Admin_Controller
 	{
 		parent::__construct();
 
-		// Fire an event, we're posting a new blog!
-		Events::trigger('blog_article_published');
-
 		$this->load->model(array('blog_m', 'blog_categories_m'));
 		$this->lang->load(array('blog', 'categories'));
 
 		//Dynamic router support
+/*
 		$this->load->helper('blog');
 		$this->load->library('droutes');
-
+*/
 		$this->load->library(array('keywords/keywords', 'form_validation'));
 
 		// Date ranges for select boxes
@@ -204,13 +202,7 @@ class Admin extends Admin_Controller
 				if ($this->input->post('status') == 'live')
 				{
 					// Fire an event, we're posting a new blog!
-					Events::trigger('blog_article_published');
-					$this->droutes->add(
-						array('name'=>'blog',
-							  'group_id'=>$id,
-							  'route_key'=>get_post_url($id, $this->input->post('slug'), $created_on, $this->input->post('category_id')),
-							  'route_value'=>'blog/view/id/'.$id
-							  ));
+					Events::trigger('blog_article_published',$id);
 				}
 			}
 			else
@@ -314,30 +306,16 @@ class Admin extends Admin_Controller
 				if ($post->status != 'live' and $this->input->post('status') == 'live')
 				{
 					// Fire an event, we're posting a new blog!
-					Events::trigger('blog_article_published');
-					$this->droutes->add(
-						array('name'=>'blog',
-							  'group_id'=>$id,
-							  'route_key'=>get_post_url($id, $this->input->post('slug'), $created_on, $this->input->post('category_id')),
-							  'route_value'=>'blog/view/id/'.$id
-							  ));
+					Events::trigger('blog_article_published',$id);
 				}
 				else if($post->status == 'live' and $this->input->post('status') != 'live' )
 				{
 					//Removed from the live handle routes
-					$this->droutes->delete(
-						array('name'=>'blog',
-							  'group_id'=>$id
-							  ));
+					Events::trigger('blog_article_unpublished',$id);
 				}
 				else if($post->slug != $this->input->post('slug') || $post->category_id != $this->input->post('category_id'))
 				{
-					$this->droutes->change(
-						array('name'=>'blog',
-							  'group_id'=>$id,
-							  'route_key'=>get_post_url($id, $this->input->post('slug'), $created_on, $this->input->post('category_id')),
-							  'route_value'=>'blog/view/id/'.$id
-							  ));
+					Events::trigger('blog_article_changed',array('id'=>$id,'old'=>$post));
 				}
 			}
 
@@ -439,12 +417,8 @@ class Admin extends Admin_Controller
 					// Wipe cache for this model, the content has changed
 					$this->pyrocache->delete('blog_m');
 					$post_titles[] = $post->title;
-					$this->droutes->add(
-						array('name'=>'blog',
-							  'group_id'=>$id,
-							  'route_key'=>get_post_url($id, $post->slug, $post->created_on, $post->category_id),
-							  'route_value'=>'blog/view/id/'.$id
-							  ));
+
+					Events::trigger('blog_article_published',$id);
 				}
 			}
 		}
@@ -492,15 +466,13 @@ class Admin extends Admin_Controller
 				// Get the current page so we can grab the id too
 				if ($post = $this->blog_m->get($id))
 				{
+					Events::trigger('blog_article_deleted',$id);
+
 					$this->blog_m->delete($id);
 
 					// Wipe cache for this model, the content has changed
 					$this->pyrocache->delete('blog_m');
 					$post_titles[] = $post->title;
-					$this->droutes->delete(
-						array('name'=>'blog',
-							  'group_id'=>$id
-							  ));
 				}
 			}
 		}

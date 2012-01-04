@@ -27,10 +27,10 @@ class Droutes
 	 *
 	 * @access	public
 	 * @param	array
-	 *				name			= route name (group)
-	 *				group_id 	= item number inside group
-	 *				route_key	= route source
-	 *				route_value	= route destination
+	 *			name		= route name (group)
+	 *			group_id 	= item number inside group
+	 *			route_key	= route source
+	 *			route_value	= route destination
 	 * @param   bool = redirects will be set / fixed
 	 * @return	void
 	 */
@@ -43,7 +43,7 @@ class Droutes
 		ci()->droutes_m->insert($route);
 
 		//Check if redirect exists from current route and remove it
-		if ($check_redirect && $redirects = ci()->redirect_m->get_many_by(array('from'=>$route->route_key)))
+		if ($check_redirect && $redirects = ci()->redirect_m->get_many_by(array('from'=>str_replace('(:any)', '%', $route->route_key))))
 		{
 			foreach ($redirects as $redirect)
 			{
@@ -78,22 +78,24 @@ class Droutes
 		if ($old_route = ci()->droutes_m->get_by(array('name'=>$route['name'],'group_id'=>$route['group_id'])))
 		{
 			// Add redirect from old url to new one
-			$check_redirect and ci()->redirect_m->insert(array('from'=>$old_route->route_key, 'to'=>$route['route_key']));
+			$check_redirect and ci()->redirect_m->insert(
+					array('from'=>str_replace('(:any)', '%', $old_route->route_key),
+						  'to'=>str_replace('(:any)', '$1', $route['route_key'])));
 
 			// Change old route to new one
 			ci()->droutes_m->update($old_route->id, $route);
 
 			//Check if there are redirects pointing to changed uri
-			if($check_redirect && $redirects = ci()->redirect_m->get_many_by(array('to'=>$old_route->route_key)))
+			if($check_redirect && $redirects = ci()->redirect_m->get_many_by(array('to'=>str_replace('(:any)', '%', $old_route->route_key))))
 			{
 				foreach($redirects as $redirect)
 				{
-					ci()->redirect_m->update($redirect->id, array('from'=>$redirect->from, 'to'=>$route['route_key']));
+					ci()->redirect_m->update($redirect->id, array('from'=>$redirect->from, 'to'=>str_replace('(:any)', '$1', $route['route_key'])));
 				}
 			}
 
 			//Check if redirect exists from current route and remove it
-			if ($check_redirect && $redirects = ci()->redirect_m->get_many_by(array('from'=>$route['route_key'])))
+			if ($check_redirect && $redirects = ci()->redirect_m->get_many_by(array('from'=>str_replace('(:any)', '%', $route['route_key']))))
 			{
 				foreach ($redirects as $redirect)
 				{
@@ -127,10 +129,10 @@ class Droutes
 		if ($old_route = ci()->droutes_m->get_by(array('name'=>$route['name'],'group_id'=>$route['group_id'])))
 		{
 			// Add redirect from old url to front page
-			$check_redirect and ci()->redirect_m->insert(array('from'=>$old_route->route_key, '/'));
+			$check_redirect and ci()->redirect_m->insert(array('from'=>str_replace('(:any)', '%', $old_route->route_key), '/'));
 
 			//Change also old routes to point
-			if($check_redirect && $redirects = ci()->redirect_m->get_many_by(array('to'=>$old_route->route_key)))
+			if($check_redirect && $redirects = ci()->redirect_m->get_many_by(array('to'=>str_replace('(:any)', '%', $old_route->route_key))))
 			{
 				foreach($redirects as $redirect)
 				{

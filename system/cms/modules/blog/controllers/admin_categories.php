@@ -43,8 +43,8 @@ class Admin_Categories extends Admin_Controller {
 		$this->lang->load('blog');
 
 		//Dynamic router
-		$this->load->helper('blog');
-		$this->load->library('droutes');
+		//$this->load->helper('blog');
+		//$this->load->library('droutes');
 
 		// Load the validation library along with the rules
 		$this->load->library('form_validation');
@@ -88,13 +88,7 @@ class Admin_Categories extends Admin_Controller {
 			if($id)
 			{
 				$this->session->set_flashdata('success', sprintf( lang('cat_add_success'), $this->input->post('title')) );
-				$new_category = $this->blog_categories_m->get($id);
-				$this->droutes->add(
-					array('name'=>'blog_category',
-						'group_id'=>$id,
-						'route_key'=>get_category_url($new_category->slug),
-						'route_value'=>'blog/category/id/'.$id
-						));
+				Events::trigger('blog_category_created',$id);
 			}
 			else
 			{
@@ -138,24 +132,7 @@ class Admin_Categories extends Admin_Controller {
 				$this->session->set_flashdata('success', sprintf( lang('cat_edit_success'), $this->input->post('title')) );
 				if($category->title != $this->input->post('title'))
 				{
-					$new_category = $this->blog_categories_m->get($id);
-					$this->droutes->change(
-						array('name'=>'blog_category',
-							  'group_id'=>$id,
-							  'route_key'=>get_category_url($new_category->slug),
-							  'route_value'=>'blog/category/id/'.$id
-							  ));
-					//Update routes and redirects to blog posts too
-					$blogs = $this->blog_m->get_many_by(array('category_id'=>$id));
-					foreach($blogs as $blog)
-					{
-						$this->droutes->change(
-							array('name'=>'blog',
-								  'group_id'=>$blog->id,
-								  'route_key'=>get_post_url($blog->id, $blog->slug, $blog->created_on, $blog->category_id),
-								  'route_value'=>'blog/view/id/'.$blog->id
-								  ));
-					}
+					Events::trigger('blog_category_changed',array('id'=>$id,'old'=>$category));
 				}
 			}
 			else
@@ -201,11 +178,7 @@ class Admin_Categories extends Admin_Controller {
 				if ($this->blog_categories_m->delete($id))
 				{
 					$deleted++;
-
-					$this->droutes->delete(
-					array('name'=>'blog_category',
-						  'group_id'=>$id
-						  ));
+					Events::trigger('blog_category_deleted',$id);
 				}
 				else
 				{
@@ -235,7 +208,9 @@ class Admin_Categories extends Admin_Controller {
 	 */
 	public function _check_title($title = '')
 	{
-		if ($this->blog_categories_m->check_title($title))
+		$checks = Events::trigger('blog_category_check_title',$title,'array');
+		if ($this->blog_categories_m->check_title($title) OR
+			in_array(FALSE,$checks))
 		{
 			$this->form_validation->set_message('_check_title', sprintf(lang('cat_already_exist_error'), $title));
 			return FALSE;
@@ -267,6 +242,7 @@ class Admin_Categories extends Admin_Controller {
 			if ($id > 0)
 			{
 				$message = sprintf( lang('cat_add_success'), $this->input->post('title'));
+				Events::trigger('blog_category_created',$id);
 			}
 			else
 			{

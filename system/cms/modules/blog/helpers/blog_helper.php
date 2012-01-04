@@ -43,7 +43,7 @@ function get_post_url($id, $post_slug, $created_on, $category_id, $category_slug
 
 function get_category_slug($category_id)
 {
-if ($category_id)
+	if ($category_id)
 	{	ci()->load->model('blog/blog_categories_m');
 		$category = ci()->blog_categories_m->get($category_id);
 		return $category->slug;
@@ -53,29 +53,6 @@ if ($category_id)
 		//Hard coded value, if no category set to blog
 		return 'no-category';
 	}
-}
-
-/**
- * Return a users display name based on settings
- *
- * @param int $user the users id
- * @return  string
- */
-function get_category_url($slug)
-{
-	switch (Settings::get('blog_route_settings')) {
-		case 0:
-			$url = 'blog/category/'.$slug;
-			break;
-		case 1:
-			$url = 'blog/'.$slug;
-			break;
-		case 2:
-			$url = $slug;
-			break;
-		default:
-	}
-	return $url;
 }
 
 /* End of file blog/helpers/blog_helper.php */
