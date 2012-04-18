@@ -16,7 +16,7 @@ class Plugin_Navigation extends Plugin
 	 *
 	 * Usage:
 	 * {{ navigation:links group="header" }}
-	 * Optional:  indent="", tag="li", list_tag="ul", top="text", separator="", group_segment="", class="", more_class=""
+	 * Optional:  indent="", tag="li", list_tag="ul", top="text", separator="", group_segment="", class="", more_class="", wrap=""
 	 * @param	array
 	 * @return	array
 	 */
@@ -55,7 +55,7 @@ class Plugin_Navigation extends Plugin
 		$first_class	= $this->attribute('first-class', 'first');
 		$last_class		= $this->attribute('last-class', 'last');
 		$output			= $return_arr ? array() : '';
-
+		$wrap			= $this->attribute('wrap');
 		$i		= 1;
 		$total	= sizeof($links);
 
@@ -98,6 +98,11 @@ class Plugin_Navigation extends Plugin
 			// attributes of anchor
 			$item['url']					= $link['url'];
 			$item['title']					= $link['title'];
+			if($wrap)
+			{
+				$item['title']  = '<'.$wrap.'>'.$item['title'].'</'.$wrap.'>';
+			}
+			
 			$item['attributes']['target']	= $link['target'] ? 'target="' . $link['target'] . '"' : NULL;
 			$item['attributes']['class']	= $link_class ? 'class="' . $link_class . '"' : '';
 
@@ -142,7 +147,11 @@ class Plugin_Navigation extends Plugin
 			}
 
 			// is the link we're currently working with found inside the children html?
-			if ( ! in_array($current_class, $wrapper['class']) AND isset($wrapper['children']) AND $current_link AND strpos($wrapper['children'], $current_link))
+			if ( ! in_array($current_class, $wrapper['class']) AND 
+				isset($wrapper['children']) AND 
+				$current_link AND 
+				((is_array($wrapper['children']) AND in_array($current_link, $wrapper['children'])) OR 
+				(is_string($wrapper['children']) AND strpos($wrapper['children'], $current_link))))
 			{
 				// that means that this link is a parent
 				$wrapper['class'][] = 'has_' . $current_class;

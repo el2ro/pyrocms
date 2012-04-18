@@ -11,7 +11,7 @@
  */
 class Module_Templates extends Module {
 
-	public $version = '0.1';
+	public $version = '1.0';
 
 	public function info()
 	{
@@ -29,7 +29,8 @@ class Module_Templates extends Module {
 				'lt' => 'El. laiškų šablonai',
 				'ru' => 'Шаблоны почты',
 				'da' => 'Email skabeloner',
-				'zh' => '郵件範本'
+				'zh' => '郵件範本',
+				'id' => 'Template Email'
 			),
 			'description' => array(
 				'sl' => 'Ustvari, uredi in shrani spremenljive email predloge',
@@ -44,12 +45,14 @@ class Module_Templates extends Module {
 				'lt' => 'Kurk, tvarkyk ir saugok dinaminius el. laiškų šablonus.',
 				'ru' => 'Создавайте, редактируйте и сохраняйте динамические почтовые шаблоны',
 				'da' => 'Opret, redigér og gem dynamiske emailskabeloner.',
-				'zh' => '新增、編輯與儲存可顯示動態資料的 email 範本'
+				'zh' => '新增、編輯與儲存可顯示動態資料的 email 範本',
+				'id' => 'Membuat, mengedit, dan menyimpan template email dinamis'
 			),
 			'frontend' => FALSE,
 			'backend' => TRUE,
 			'menu' => 'design',
 			'author' => 'Stephen Cozart',
+			'skip_xss' => TRUE,
 			
 			'shortcuts' => array(
 				array(
@@ -109,7 +112,7 @@ class Module_Templates extends Module {
 		";
 		
 		$registered_template = "
-			INSERT INTO " . $this->db->dbprefix('email_templates') . " (`slug`, `name`, `description`, `subject`, `body`, `lang`, `is_default`) VALUES ('registered', 'New User Registered', 'The email sent to the site contact e-mail when a new user registers', '{{ settings:site_name }} :: You have just received a registration from {{ name}', '<h3>You have received a registration from {{ name}</h3><strong>IP Address: {{ sender_ip }}</strong>
+			INSERT INTO " . $this->db->dbprefix('email_templates') . " (`slug`, `name`, `description`, `subject`, `body`, `lang`, `is_default`) VALUES ('registered', 'New User Registered', 'The email sent to the site contact e-mail when a new user registers', '{{ settings:site_name }} :: You have just received a registration from {{ name }}', '<h3>You have received a registration from {{ name }}</h3><strong>IP Address: {{ sender_ip }}</strong>
 				<strong>Operating System: {{ sender_os }}
 				<strong>User Agent: {{ sender_agent }}</strong>', 'en', '1');
 		";

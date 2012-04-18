@@ -76,7 +76,7 @@ jQuery(function($){
 		self.colorbox({
 			scrolling	: false,
 			width		:'650',
-			height		:'500',
+			height		:'535',
 			onComplete	: function(){
 
 				var form = $('form#folders_crud'),
@@ -266,7 +266,7 @@ jQuery(function($){
 	$(".edit_file").livequery(function(){
 		$(this).colorbox({
 			scrolling	: false,
-			width		: '600',
+			width		: '750',
 			height		: '480',
 			onComplete: function(){
 				var form = $('form#files_crud'),

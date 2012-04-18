@@ -4,7 +4,7 @@
 * [Documentation](http://pyrocms.com/docs)
 * [License](http://pyrocms.com/legal/license)
 * [Forums](http://pyrocms.com/forums)
-* Version: 2.0.0-dev
+* Version: 2.0.3
 
 ## Team
 
@@ -27,7 +27,7 @@ Run http://example.com/installer to run the web-based installation script.
 
 ## Upgrading
 
-For a detailed upgrade guide please look at the [2.0 Upgrading Documentation](http://www.pyrocms.com/docs/2.0/getting-started/upgrading-from-1.x).
+For a detailed upgrade guide please look at the [2.0 Upgrading Documentation](http://www.pyrocms.com/docs/2.0/getting-started/upgrading-within-2.0).
 
 ## Bugs & Feature Requests
 
@@ -48,7 +48,7 @@ It's strongly recommended that you download the [git-flow client](https://github
 
 ### Contributors
 
-* Lee Tengum
+* [Lee Tengum](http://twitter.com/thatleeguy)
 * [BenneX](http://github.com/BenneX)
 * [Colin Williams](http://williamsconcepts.com/)
 * [Yorick Peterse](http://www.yorickpeterse.com/)
@@ -75,3 +75,4 @@ Think you should be on this list? Add yourself in the next pull request you subm
 * [Petsagourakis George](https://github.com/petsagouris) Greek
 * [Mikael Kundert](https://github.com/mikaelkundert) Finnish
 * [Jack Sun](http://www.o-matic.com.tw/) Chinese Traditional
+* [Toni Haryanto](http://toniharyanto.cs.upi.edu/) Indonesian
